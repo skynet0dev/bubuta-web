@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#9ad3ff">
+<title>Bubuta · веб-клиент</title>
+<link rel="icon" type="image/png" href="public/assets/graphics/bb.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <div id="screen-splash" class="screen active">
+    <canvas id="splash-bg"></canvas>
+    <div class="splash-inner">
+      <img id="splash-logo" class="splash-logo" alt="Bubuta" draggable="false">
+      <div id="splash-status" class="splash-status">[b]Connecting...[/b]</div>
+      <img id="splash-spinner" class="splash-spinner" alt="load" draggable="false">
+    </div>
+  </div>
+
+  <div id="screen-login" class="screen">
+    <div class="login-frame">
+      <span id="login-markup" class="login-title"></span>
+      <p class="login-sub">The most fun and cheerful mobile chat in the world.</p>
+      <input id="login-nick" class="field" type="text" maxlength="16" placeholder="Ник" autocomplete="username">
+      <input id="login-pass" class="field" type="password" maxlength="32" placeholder="Пароль" autocomplete="current-password">
+      <button id="login-btn" class="btn-accent">Войти</button>
+      <button id="login-guest" class="btn-flat">Войти как гость</button>
+      <div id="login-status" class="login-status hidden"></div>
+      <div id="login-error" class="login-error hidden"></div>
+      <img src="public/assets/graphics/bb.png" class="login-mascot" alt="" draggable="false">
+    </div>
+  </div>
+
+  <div id="screen-lobby" class="screen">
+    <div class="lobby-head">
+      <img id="lobby-avatar" class="avatar" alt="" draggable="false">
+      <div>
+        <div id="lobby-nick" class="lobby-nick"></div>
+        <div id="lobby-loc" class="lobby-loc"></div>
+      </div>
+      <button id="lobby-settings" class="icon-btn" title="Настройки">⚙</button>
+    </div>
+    <div id="lobby-list" class="lobby-list"></div>
+  </div>
+
+  <div id="screen-room" class="screen">
+    <div class="room-top">
+      <button id="room-back" class="icon-btn" title="Выйти">←</button>
+      <div id="room-title" class="room-title"></div>
+      <div class="room-sun"><img id="room-sun" alt="" draggable="false"></div>
+    </div>
+    <canvas id="room-canvas"></canvas>
+
+    <div id="room-chat" class="room-chat">
+      <div id="chat-log" class="chat-log"></div>
+    </div>
+
+    <div id="room-toolbar" class="room-toolbar">
+      <button class="tb-btn" data-action="smiles" title="Смайлы">☺</button>
+      <button class="tb-btn" data-action="gifts" title="Подарки">🎁</button>
+      <button class="tb-btn" data-action="private" title="Приватный чат">💬</button>
+      <button class="tb-btn" data-action="menu" title="Меню">☰</button>
+      <input id="room-input" class="room-input" type="text" maxlength="400" placeholder="Введите сообщение…" autocomplete="off">
+      <button id="room-send" class="tb-btn send" title="Отправить">➤</button>
+    </div>
+
+    <div id="smile-popup" class="popup hidden"></div>
+
+    <div id="overlay-menu" class="overlay hidden">
+      <div class="panel" id="menu-panel">
+        <div class="panel-head"><span>Меню</span><button class="x" data-close="1">✕</button></div>
+        <div class="panel-body" id="menu-body"></div>
+      </div>
+    </div>
+
+    <div id="overlay-private" class="overlay hidden">
+      <div class="panel private">
+        <div class="panel-head"><span id="private-title">Приватный чат</span><button class="x" data-close="2">✕</button></div>
+        <div id="private-users" class="private-users"></div>
+        <div id="private-log" class="private-log"></div>
+        <div class="private-input-row">
+          <input id="private-input" class="room-input" type="text" maxlength="400" placeholder="Личное сообщение…" autocomplete="off">
+          <button id="private-send" class="tb-btn send">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="overlay-context" class="overlay hidden"></div>
+    <div id="ctx-popup" class="ctx hidden"></div>
+    <div id="toast" class="toast hidden"></div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
