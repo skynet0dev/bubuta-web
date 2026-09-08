@@ -199,10 +199,18 @@ class App {
     $("#login-error").textContent = "";
     if (!nick) { $("#login-error").textContent = "Введи ник"; return; }
     $("#login-btn").disabled = true;
-    await this.net.connect(nick, guest);
-    this.me = this.net.user;
-    $("#login-btn").disabled = false;
-    this.setScreen("lobby");
+    $("#login-status").classList.remove("hidden");
+    $("#login-status").textContent = "Подключение через мост ws://127.0.0.1:" + (this.net.bridgePort || 8166) + " ...";
+    try {
+      this.me = await this.net.connect(nick, guest);
+      $("#login-status").textContent = "Аккаунт: " + (this.me.user_id ? "id=" + this.me.user_id + " " : "") + (this.me.nick || "");
+      $("#login-btn").disabled = false;
+      this.setScreen("lobby");
+    } catch (e) {
+      $("#login-error").textContent = "Ошибка: " + (e && e.message ? e.message : e);
+      $("#login-status").textContent = "";
+      $("#login-btn").disabled = false;
+    }
   }
 
   // ---------------- room ----------------
@@ -254,6 +262,15 @@ class App {
   onNet(ev) {
     if (!ev) return;
     switch (ev.type) {
+      case "log": {
+        const el = document.querySelector("#login-status");
+        if (el) {
+          el.textContent = ev.text || "";
+          el.classList.remove("hidden");
+        }
+        console.log("[net] " + (ev.text || ""));
+        break;
+      }
       case "message": {
         const m = ev.msg;
         if (this.chat) {
