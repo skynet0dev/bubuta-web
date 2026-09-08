@@ -9,6 +9,20 @@ const KEY_MASKS = {
   4: Uint8Array.from([0x0f, 0xd6, 0x76, 0x90, 0x1c]),
 };
 
+// Entry [0/0] blobs captured from the real Android client.
+// The server VALIDATES the whole 19-byte blob (any mutation is rejected),
+// so we must replay known-good ones. Session key is fresh each connection.
+const ENTRY_BLOBS = [
+  "040101573ee14ea7243de04fa429fbc842e963",
+  "040101ed3ee14ea02938e147a92991272fe09f",
+  "040101c53ee14ea72536e647a824475b5e63a7",
+].map((hex) => {
+  const b = new Uint8Array(19);
+  for (let i = 0; i < 19; i++) b[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return b;
+});
+let entryBlobIndex = Math.floor(Math.random() * ENTRY_BLOBS.length);
+
 export class Net {
   constructor(onEvent) {
     this.onEvent = onEvent;
@@ -93,23 +107,18 @@ export class Net {
   async _doHandshake() {
     try {
       this.state = "handshake";
-      this.hsKeyId = Math.random() < 0.5 ? 4 : 0;
+      // The server validates the entry blob byte-for-byte, so replay captured ones.
+      this.entryBlob = ENTRY_BLOBS[entryBlobIndex % ENTRY_BLOBS.length];
+      entryBlobIndex++;
+      this.hsKeyId = this.entryBlob[0] in KEY_MASKS ? this.entryBlob[0] : 4;
       const mask = KEY_MASKS[this.hsKeyId];
-      this.hsKey5 = crypto.getRandomValues(new Uint8Array(5));
-      const masked = new Uint8Array(5);
-      for (let i = 0; i < 5; i++) masked[i] = this.hsKey5[i] ^ mask[i];
+      this.hsKey5 = new Uint8Array(5);
+      for (let i = 0; i < 5; i++) this.hsKey5[i] = this.entryBlob[14 + i] ^ mask[i];
 
-      const blob = new Uint8Array(19);
-      const info = crypto.getRandomValues(new Uint8Array(11));
-      blob[0] = this.hsKeyId;
-      blob[1] = 0x01; blob[2] = 0x01;
-      blob.set(info, 3);
-      blob.set(masked, 14);
-
-      const payload = encodePayload([blob]);
+      const payload = encodePayload([this.entryBlob]);
       const frame = framePacket(0, 0, 0, payload); // plaintext
       this._send(frame);
-      this._emit({ type: "log", text: `Handshake [0/0] sent (key_id=${this.hsKeyId}), waiting key...` });
+      this._emit({ type: "log", text: `Handshake [0/0] sent (entry blob #${entryBlobIndex}, key_id=${this.hsKeyId}), waiting key...` });
       this.cipher = new XorCipher(this.hsKey5);
     } catch (e) {
       this._emit({ type: "log", text: "Handshake err: " + e.message });
@@ -228,6 +237,7 @@ export class Net {
   _buildDeviceInfo() {
     const saved = {};
     try { Object.assign(saved, JSON.parse(localStorage.getItem("bubuta_account") || "{}")); } catch (e) {}
+    this._savedAccount = saved;
     this._lastAndroidId = saved.android_id || randomHex(8);
     const deviceInfo = {
       android_id: this._lastAndroidId,
@@ -265,6 +275,20 @@ export class Net {
         this._online();
         return;
       }
+      // login: server confirms existing account with {nick, sex, ping_interval}
+      if (typeof d.nick === "string") {
+        const saved = {};
+        try { Object.assign(saved, JSON.parse(localStorage.getItem("bubuta_account") || "{}")); } catch (e) {}
+        this._emit({ type: "log", text: `LOGIN OK: nick=${d.nick} sex=${d.sex}` });
+        if (!saved.nick) {
+          saved.nick = d.nick;
+          saved.user_id = saved.user_id ?? this._lastSavedUserId;
+          try { localStorage.setItem("bubuta_account", JSON.stringify(saved)); } catch (e) {}
+        }
+        if (this._savedAccount) this._savedAccount.nick = d.nick;
+        this._online();
+        return;
+      }
       // empty dict {} → new device, need sex
       if (Object.keys(d).length === 0) {
         this.awaitingSex = true;
@@ -294,7 +318,13 @@ export class Net {
 
   _handleChat(data, priv) {
     try {
-      let items = Array.isArray(data[0]) ? data[0] : data;
+      // [2/4] → [[0, seq, ts, uid, text], ...]  OR  [2/28-sent] → []
+      let items;
+      if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0]) && data[0].length > 0) {
+        items = Array.isArray(data[0][0]) ? data[0] : data;
+      } else {
+        items = data;
+      }
       for (const row of items) {
         if (Array.isArray(row) && row.length >= 5) {
           const [, seq, , senderId, text] = row;
@@ -327,11 +357,12 @@ export class Net {
 
   _online() {
     this.state = "online";
+    const account = this.regAccount.user_id ? this.regAccount : (this._savedAccount || this.regAccount);
     this.user = {
       id: "me",
-      nick: this.regAccount.nick || this.nick,
-      user_id: this.regAccount.user_id,
-      password: this.regAccount.password,
+      nick: account.nick || this.nick,
+      user_id: account.user_id,
+      password: account.password,
       color: "#73a7ff", smile: 0, x: 480, y: 0,
     };
     this._resolve(this.user);
