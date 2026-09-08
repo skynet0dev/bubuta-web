@@ -1,18 +1,18 @@
 export const ASSETS = "public/assets/";
 
 export const SOUNDS = [
-  "sound/click1.mp3", "sound/click2.mp3", "sound/click3.mp3",
-  "sound/eff1.mp3", "sound/eff2.mp3", "sound/eff3.mp3",
-  "sound/eff4.mp3", "sound/eff5.mp3", "sound/eff6.mp3",
-  "sound/eff7.mp3", "sound/eff8.mp3", "sound/eff9.mp3",
-  "sound/eff10.mp3", "sound/eff11.mp3", "sound/eff12.mp3",
-  "sound/eff13.mp3", "sound/eff14.mp3", "sound/eff15.mp3",
-  "sound/message_1.mp3", "sound/message_2.mp3", "sound/message_3.mp3",
-  "sound/new_online.mp3", "sound/online.mp3",
-  "sound/receive_1.mp3", "sound/receive_2.mp3", "sound/receive_3.mp3",
-  "sound/send_1.mp3", "sound/send_2.mp3", "sound/send_3.mp3",
-  "sound/system_1.mp3", "sound/system_2.mp3", "sound/system_3.mp3",
-  "sound/timer_1.mp3"
+  "sound/1.mp3", "sound/2.mp3", "sound/3.mp3",
+  "sound/4.mp3", "sound/5.mp3", "sound/6.mp3",
+  "sound/7.mp3", "sound/8.mp3", "sound/9.mp3",
+  "sound/10.mp3", "sound/11.mp3", "sound/12.mp3",
+  "sound/13.mp3", "sound/14.mp3", "sound/15.mp3",
+  "sound/16.mp3", "sound/17.mp3", "sound/18.mp3",
+  "sound/19.mp3", "sound/20.mp3", "sound/21.mp3",
+  "sound/22.mp3", "sound/23.mp3",
+  "sound/24.mp3", "sound/25.mp3", "sound/26.mp3",
+  "sound/27.mp3", "sound/28.mp3", "sound/29.mp3",
+  "sound/30.mp3", "sound/31.mp3", "sound/32.mp3",
+  "sound/33.mp3"
 ];
 
 export const LOCATIONS = [

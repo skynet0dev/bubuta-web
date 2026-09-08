@@ -87,7 +87,7 @@ class App {
   }
 
   async loadCore() {
-    await playSound("sound/click1.mp3").catch(() => {});
+    await playSound("sound/1.mp3").catch(() => {});
   }
 
   async loadSplashBg() {
@@ -415,10 +415,10 @@ class App {
     this.chat.add({ type: "sys", text: "[b]Серверная комната[/b]: " + (ev.title || ev.loc_id) });
   }
 
-  soundMsg() { this.autoSound(["sound/message_1.mp3", "sound/receive_1.mp3"]); }
-  soundPoke() { this.autoSound(["sound/click2.mp3"]); }
-  soundFx() { this.autoSound(["sound/eff1.mp3", "sound/eff3.mp3", "sound/eff6.mp3"]); }
-  soundSend() { this.autoSound(["sound/send_1.mp3", "sound/send_2.mp3"]); }
+  soundMsg() { this.autoSound(["sound/19.mp3", "sound/24.mp3"]); }
+  soundPoke() { this.autoSound(["sound/2.mp3"]); }
+  soundFx() { this.autoSound(["sound/4.mp3", "sound/6.mp3", "sound/9.mp3"]); }
+  soundSend() { this.autoSound(["sound/27.mp3", "sound/28.mp3"]); }
 
   autoSound(arr) { playSound(arr[Math.floor(Math.random() * arr.length)]).catch(() => {}); }
 
