@@ -119,6 +119,7 @@
         <label>int_zero:</label><input id="intzero" type="checkbox" style="width:auto"></div>
       <div class="row"><button class="btn green" onclick="doConnect()">Подключиться</button>
         <span style="font-size:12px;color:#7d94ad" id="connInfo">нажми «Войти»</span></div>
+      <div class="row"><label style="min-width:0">Лог:</label><div id="log"></div></div>
     </div>
 
     <div id="screenEmpty" class="panel">
@@ -165,7 +166,7 @@ import { MASKS, ENTRY_BLOBS, hexToBytes, XorCipher, encodePayload, decodePayload
          framePacket, parsePacketHeader } from './protocol.js';
 
 const $ = (id) => document.getElementById(id);
-const logEl = $('log');
+const logEl = $('log') || null;
 
 let client = null;
 
@@ -177,6 +178,7 @@ const app = {
 };
 
 function log(msg, cls) {
+  if (!logEl) { console.log('[' + (cls || '') + '] ' + msg); return; }
   const line = document.createElement('div');
   if (cls) line.className = 'log-' + cls;
   line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
