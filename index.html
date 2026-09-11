@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Bubuta Web</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: system-ui, Segoe UI, Arial, sans-serif; background: #0b0e14; color: #dfe7f0;
+         display: flex; flex-direction: column; overflow: hidden; }
+  header { background: #141a24; border-bottom: 1px solid #24303f; padding: 8px 12px;
+           display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+  header h1 { font-size: 15px; color: #7fb3ff; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #conn { color: #e3b341; font-size: 16px; }
+  #conn.on { color: #3fb950; }
+  .btn { background: #1e2a3a; color: #dfe7f0; border: 1px solid #33455c; border-radius: 8px;
+         padding: 8px 12px; cursor: pointer; font: inherit; font-size: 13px; }
+  .btn:active { background: #2a3c52; }
+  .btn.green { background: #1d4b2c; border-color: #2e8a4a; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.small { padding: 5px 8px; font-size: 12px; border-radius: 6px; }
+
+  nav { flex: 0 0 auto; background: #10161f; border-bottom: 1px solid #24303f; display: flex; gap: 4px; padding: 6px 8px; }
+  nav .tab { background: transparent; border: none; color: #8fa3b8; padding: 8px 14px; border-radius: 8px;
+             cursor: pointer; font: inherit; font-size: 14px; }
+  nav .tab.act { background: #1e2a3a; color: #fff; }
+  nav .sp { flex: 1; }
+
+  main { flex: 1 1 auto; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+  #screenWrap { position: absolute; inset: 0; overflow-y: auto; padding: 10px; }
+  #gameWrap   { position: absolute; inset: 0; display: none; flex-direction: column; }
+
+  .panel { background: #121926; border: 1px solid #24303f; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 5px 0; }
+  .row label { min-width: 88px; color: #88a0bb; font-size: 13px; }
+  input, select {
+    background: #0b0e14; color: #dfe7f0; border: 1px solid #33455c; border-radius: 8px;
+    padding: 8px 10px; font: inherit; font-size: 13px; min-width: 0;
+  }
+  input:focus, select:focus { outline: 1px solid #4c7edb; }
+
+  #log { background: #080b10; border: 1px solid #24303f; border-radius: 10px; padding: 8px;
+         height: 120px; overflow-y: auto; font-family: Consolas, monospace; font-size: 11px;
+         white-space: pre-wrap; color: #9db0c4; }
+  .log-ok { color: #3fb950; }
+  .log-err { color: #ff7b72; }
+
+  .menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .mi { background: #1a2332; border: 1px solid #2d3c50; border-radius: 10px; padding: 12px; cursor: pointer; }
+  .mi:hover { background: #25344a; }
+  .mi .t { font-weight: 600; font-size: 14px; }
+  .mi .d { color: #7d94ad; font-size: 12px; margin-top: 2px; }
+
+  .polTabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .polTabs .pt { background: #17202e; border: 1px solid #2d3c50; color: #b6c6d8; padding: 7px 12px;
+                 border-radius: 8px; cursor: pointer; font: inherit; font-size: 13px; }
+  .polTabs .pt.act { background: #2b5a8a; border-color: #3f7fc4; color: #fff; }
+
+  #topBar { background: #10161f; border-bottom: 1px solid #24303f; padding: 6px 8px;
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 0 0 auto; }
+  #topBar .ttl { font-weight: 600; font-size: 14px; color: #fff; margin-right: 6px; }
+  #roomWrap { position: relative; flex: 1 1 auto; background: #0a0e14; overflow: hidden; }
+  #roomCW { width: 100%; height: 100%; }
+  #chatCol { flex: 0 0 auto; display: flex; flex-direction: column; background: #10161f;
+             border-top: 1px solid #24303f; max-height: 42%; }
+  #chatLog { overflow-y: auto; padding: 8px 10px; flex: 1 1 auto; font-size: 13px; }
+  .msg { margin: 2px 0; }
+  .msg .who { color: #7fb3ff; font-weight: 600; }
+  .msg .who.me { color: #56d364; }
+  .msg.sys { color: #e3b341; }
+  #chatIn { display: flex; gap: 6px; padding: 8px; border-top: 1px solid #24303f; }
+  #chatIn input { flex: 1; }
+
+  .hidden { display: none !important; }
+  #splash { position: absolute; inset: 0; background: rgba(8,11,16,.96); display: flex; align-items: center;
+            justify-content: center; flex-direction: column; gap: 14px; z-index: 20; }
+  #splash .b { font-size: 26px; }
+  #splash .s { color: #7d94ad; font-size: 14px; }
+  #dialog { position: absolute; inset: 0; background: rgba(8,11,16,.85); display: none; align-items: center;
+            justify-content: center; z-index: 30; padding: 20px; }
+  #dialog .box { background: #121926; border: 1px solid #33455c; border-radius: 12px; padding: 16px;
+                 max-width: 440px; width: 100%; }
+  #dialog .box .msg { margin-bottom: 12px; white-space: pre-wrap; }
+  #dialog .box .ans { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  #whoTip { position: absolute; background: #1a2332cc; border: 1px solid #33455c; border-radius: 8px;
+            padding: 6px 10px; font-size: 13px; pointer-events: none; display: none; z-index: 10; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Bubuta Web</h1>
+  <span id="conn" title="статус">●</span>
+  <button class="btn" id="btnMenu" onclick="openMainMenu()">Главное меню</button>
+  <button class="btn" id="btnSettings" onclick="toggleSettings()">Настройки</button>
+</header>
+
+<nav id="nav">
+  <button class="tab act" data-nav="main">Главная</button>
+  <button class="tab" data-nav="polis">Город</button>
+  <button class="tab" data-nav="chat">2D-чат</button>
+  <span class="sp"></span>
+  <button class="btn small" id="btnConnect" onclick="doConnect()">Войти</button>
+  <button class="btn small" id="btnDisconnect" onclick="doDisconnect()" disabled>Выйти</button>
+</nav>
+
+<main id="main">
+
+  <div id="screenWrap">
+    <div id="settingsPanel" class="panel hidden">
+      <div class="row"><label>Bridge (WS):</label><input id="bridge" value="wss://bubuta-ws-bridge.bubuta.workers.dev" size="36"></div>
+      <div class="row"><label>user_id:</label><input id="uid" value="61917995" style="width:110px">
+        <label>password:</label><input id="pw" type="password" value="" style="width:120px">
+        <label>nick:</label><input id="nick" value="Элеонора" style="width:110px"></div>
+      <div class="row"><label>blob:</label>
+        <select id="blob"><option value="cap">cap</option><option value="reg">reg</option><option value="mod">mod</option></select>
+        <label>android_id:</label><input id="aid" value="web001" style="width:110px">
+        <label>int_zero:</label><input id="intzero" type="checkbox" style="width:auto"></div>
+      <div class="row"><button class="btn green" onclick="doConnect()">Подключиться</button>
+        <span style="font-size:12px;color:#7d94ad" id="connInfo">нажми «Войти»</span></div>
+    </div>
+
+    <div id="screenEmpty" class="panel">
+      <div style="color:#7d94ad;font-size:14px">Войдите: «Настройки» → «Войти», затем «Главное меню».</div>
+    </div>
+    <div id="menuPanel"></div>
+  </div>
+
+  <div id="gameWrap">
+    <div id="topBar">
+      <span class="ttl" id="roomTitle">Локация</span>
+      <span id="roomCount" style="color:#7d94ad;font-size:12px"></span>
+      <span style="flex:1"></span>
+      <button class="btn small" id="tbHome" onclick="tbTap('_home')" hidden>Домой</button>
+      <button class="btn small" id="tbMoney" onclick="tbTap('_money')" hidden>Деньги</button>
+      <button class="btn small" id="tbMsg" onclick="tbTap('__new_msg')" hidden>Сообщения</button>
+      <button class="btn small" onclick="leaveRoom()">← к списку</button>
+    </div>
+    <div id="roomWrap">
+      <canvas id="roomCW"></canvas>
+      <div id="whoTip"></div>
+    </div>
+    <div id="chatCol">
+      <div id="chatLog"></div>
+      <div id="chatIn">
+        <input id="chatText" placeholder="Написать в чат…" autocomplete="off" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="btn green" onclick="sendChat()">Отправить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="splash">
+    <div class="b">Bubuta Web</div>
+    <div class="s">подключение…</div>
+  </div>
+  <div id="dialog"><div class="box">
+    <div class="msg" id="dlgMsg"></div>
+    <div class="ans" id="dlgAns"></div>
+  </div></div>
+</main>
+
+<script type="module">
+import { MASKS, ENTRY_BLOBS, hexToBytes, XorCipher, encodePayload, decodePayload,
+         framePacket, parsePacketHeader } from './protocol.js';
+
+const $ = (id) => document.getElementById(id);
+const logEl = $('log');
+
+let client = null;
+
+const app = {
+  room: null,
+  screen: null,
+  toolbars: {},
+  auth: null,
+};
+
+function log(msg, cls) {
+  const line = document.createElement('div');
+  if (cls) line.className = 'log-' + cls;
+  line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ── protocol client ──────────────────────────────────
+class WebBubutaClient {
+  constructor(bridgeUrl) {
+    this.bridgeUrl = bridgeUrl;
+    this.ws = null;
+    this.cipher = new XorCipher();
+    this.state = 'idle';
+    this.buf = new Uint8Array(0);
+    this.pingInterval = 7;
+    this._hbTimer = null;
+    this.onContent = null;
+  }
+  connect(uid, pw, blobKey, androidId, intZero) {
+    return new Promise((resolve, reject) => {
+      this.uid = uid; this.pw = pw; this.intZero = intZero;
+      this.blob = hexToBytes(ENTRY_BLOBS[blobKey]);
+      this.mask = MASKS[String(this.blob[0])] || MASKS['4'];
+      this.k5 = new Uint8Array(5);
+      for (let i = 0; i < 5; i++) this.k5[i] = this.blob[14 + i] ^ this.mask[i];
+      this.resolveConnect = resolve; this.rejectConnect = reject;
+      this.authOk = false;
+      const ws = new WebSocket(this.bridgeUrl);
+      this.ws = ws;
+      ws.binaryType = 'arraybuffer';
+      ws.onopen = () => {
+        log('bridge connected');
+        this.cipher = new XorCipher();
+        this.state = 'wait_01';
+        this.buf = new Uint8Array(0);
+        this.sendRaw(framePacket(0, 0, 0, encodePayload([this.blob])));
+        this._startHeartbeat();
+      };
+      ws.onerror = () => { log('bridge error', 'err'); reject(new Error('bridge error')); };
+      ws.onclose = () => {
+        $('conn').className = '';
+        this._stopHeartbeat();
+        log('bridge closed');
+        this.resolveConnect?.({ status: 'closed' });
+      };
+      ws.onmessage = (ev) => this._onData(new Uint8Array(ev.data));
+    });
+  }
+  sendRaw(bytes) { if (this.ws && this.ws.readyState === 1) this.ws.send(bytes); }
+  xorsend(fg, typ, flags, payload) { this.sendRaw(framePacket(fg, typ, flags, encodePayload(payload))); }
+  _startHeartbeat() {
+    this._stopHeartbeat();
+    this._hbTimer = setInterval(() => {
+      if (/wait_01|keyed|dev_sent|online/.test(this.state)) { try { this.xorsend(0, 2, 0, []); } catch (e) {} }
+    }, Math.max(3, (this.pingInterval || 7)) * 1000);
+  }
+  _stopHeartbeat() { if (this._hbTimer) clearInterval(this._hbTimer); this._hbTimer = null; }
+  _onData(chunk) {
+    const buf = new Uint8Array(this.buf.length + chunk.length);
+    buf.set(this.buf, 0); buf.set(chunk, this.buf.length);
+    this.buf = buf; this._drain();
+  }
+  _drain() {
+    while (this.buf.length >= 4) {
+      const head = this.cipher.process(this.buf.subarray(0, 4));
+      const dv = new DataView(head.buffer, head.byteOffset, head.byteLength);
+      const ln = dv.getUint32(0);
+      if (ln < 4 || ln > 16 * 1024 * 1024) return;
+      const total = 4 + ln;
+      if (this.buf.length < total) return;
+      const frame = this.buf.subarray(0, total);
+      this.buf = this.buf.subarray(total);
+      this._handleFrame(frame);
+    }
+  }
+  _handleFrame(frame) {
+    const header = parsePacketHeader(this.cipher.process(frame.subarray(0, 8)));
+    if (!header) return;
+    let payload = frame.subarray(8);
+    try {
+      payload = this.cipher.process(payload);
+      if (payload.length > 2 && payload[0] === 0x78) {
+        (async () => {
+          const ds = new DecompressionStream('deflate');
+          const stream = new Response(payload).body.pipeThrough(ds);
+          const ab = await new Response(stream).arrayBuffer();
+          this.dispatch(header.foodgroup, header.type, header.flags, decodePayload(new Uint8Array(ab)));
+        })().catch(() => {
+          try { this.dispatch(header.foodgroup, header.type, header.flags, decodePayload(payload)); }
+          catch (e2) { log('decode2: ' + e2, 'err'); }
+        });
+        return;
+      }
+      this.dispatch(header.foodgroup, header.type, header.flags, decodePayload(payload));
+    } catch (e) {
+      log('frame fg=' + header.foodgroup + ' t=' + header.type + ': ' + e, 'err');
+    }
+  }
+  dispatch(fg, typ, flags, data) {
+    if (fg === 0 && typ === 1 && this.state === 'wait_01') {
+      for (const el of data || []) {
+        if (el instanceof Uint8Array && el.length > 4) {
+          this.cipher = new XorCipher(el);
+          this.state = 'keyed';
+          this.xorsend(0, 2, 0, []);
+          return;
+        }
+      }
+    } else if (fg === 0 && typ === 3) {
+      if (this.state === 'keyed') {
+        this.state = 'dev_sent';
+        const dt = Math.floor(Date.now() / 1000);
+        const info = {
+          android_id: this.androidId,
+          android_version: '7.1.2',
+          cx: 540, cy: 924, dt,
+          fingerprint: 'samsung/xcover4soc/xcover4s:7.1.1/NMF26X/1522899784:user/release-keys',
+          'model_name': 'SM-G390F', 'os_version': '7.1.1', 'platform': 'android',
+          user_id: this.uid,
+          password: this.intZero ? parseInt(this.pw) : this.pw,
+        };
+        this.xorsend(0, 4, 0, [info]);
+      }
+    } else if (fg === 0 && typ === 5) {
+      if (data && data[0] && typeof data[0] === 'object') {
+        const dd = data[0];
+        if (typeof dd.ping_interval === 'number') this.pingInterval = dd.ping_interval;
+        if (dd.nick) {
+          this.authOk = true;
+          this.state = 'online';
+          $('conn').className = 'on';
+          log('LOGIN OK: nick=' + dd.nick + ' ping=' + this.pingInterval, 'ok');
+          app.auth = dd;
+          $('connInfo').textContent = 'вошёл: ' + dd.nick;
+          this.xorsend(5, 6, 0, []);
+          setTimeout(() => this.xorsend(4, 0, 0, [0]), 300);
+          this.resolveConnect?.({ status: 'login_ok', auth: dd });
+        } else if (dd.user_id && dd.password) {
+          if (typeof dd.password === 'string' && /^\d+$/.test(dd.password)) {
+            $('pw').value = dd.password;
+            log('!!! password changed -> ' + dd.password, 'err');
+          }
+          this.resolveConnect?.({ status: 'auth_updated', auth: dd });
+        } else {
+          log('new device (need reg blob)', 'err');
+          this.resolveConnect?.({ status: 'new_device' });
+        }
+      }
+    } else if (fg === 4 && typ === 3) {
+      this.onContent?.({ data, client: this });
+    } else if (fg === 2 && typ === 1) {
+      const rows = data[1] || [];
+      for (const e of rows) areaUpsert(e);
+    } else if (fg === 2 && typ === 2) {
+      for (const e of data || []) areaUpsert(e);
+    } else if (fg === 2 && typ === 4) {
+      for (const row of data || []) if (Array.isArray(row)) roomAddMsg(row);
+    } else if (fg === 2 && (typ === 8)) {
+      for (const e of data || []) areaRemove(e);
+    } else if (fg === 2 && (typ === 9 || typ === 17)) {
+      roomMove(data && data[0], data && data[1]);
+    } else if (fg === 3 && typ === 5) {
+      roomSetBg(data);
+    } else if (fg === 3 && typ === 7) {
+      if (data && data[0] && typeof data[0] === 'object') { app.toolbars = data[0]; renderToolbar(); }
+    }
+  }
+  navigate(idx, key) {
+    let [sc, cnt] = app.screen || [1, 0];
+    this.xorsend(4, 1, 0, [sc, cnt + 1, 'menuSelect', { 'cur_pos': idx, key: String(key) }, {}]);
+  }
+  action(cmd, params, extra) {
+    let [sc, cnt] = app.screen || [1, 0];
+    this.xorsend(4, 1, 0, [sc, cnt + 1, cmd, params || {}, extra || {}]);
+  }
+  back() { this.action('_back', {}); }
+  close() { this._stopHeartbeat(); if (this.ws) { try { this.ws.close(); } catch (e) {} } }
+}
+
+// ── screen rendering ─────────────────────────────────
+const menuPanel = $('menuPanel');
+
+function renderScreen(res) {
+  const data = res.data;
+  const d8 = data[8] || {};
+  app.screen = [data[0], data[1]];
+  $('splash').style.display = 'none';
+
+  if (d8.loc_id != null) {
+    const loc = Number(d8.loc_id);
+    const places = Number(d8.places ?? 0) || 0;
+    openRoom(loc, places, d8.msg_list);
+    return;
+  }
+  if (d8.tab_list) {             // polis city screen
+    renderPolis(data, d8);
+    switchTabUI('polis');
+    return;
+  }
+  if (d8.menu_items && Array.isArray(d8.menu_items)) {
+    screenEmptyGone();
+    renderGenericMenu(data, d8);
+    switchTabUI('main');
+    return;
+  }
+  if (d8.msg != null && d8.ans_list) {
+    showDlg(data, d8);
+    return;
+  }
+  screenEmptyGone();
+  menuPanel.innerHTML = '<div class="panel"><h3>' + escapeHtml(String(data[3] || 'Экран')) +
+    '</h3><pre style="white-space:pre-wrap;font-size:11px;color:#9db0c4">' +
+    escapeHtml(JSON.stringify(data, (k, v) => v instanceof Uint8Array ? 'bytes(' + v.length + ')' : v)).slice(0, 1600) + '</pre></div>';
+}
+
+function btnBar(title) {
+  const b = document.createElement('div');
+  b.className = 'row';
+  b.innerHTML = '<div style="font-weight:600;font-size:15px;flex:1">' + escapeHtml(title) + '</div>' +
+    '<button class="btn small" id="btnBack">← Назад</button>';
+  b.querySelector('#btnBack').onclick = () => client?.back();
+  return b;
+}
+
+function renderGenericMenu(data, d8) {
+  const items = d8.menu_items;
+  screenEmptyGone();
+  menuPanel.innerHTML = '';
+  menuPanel.appendChild(btnBar(String(data[3] || d8.title || 'Меню')));
+  const grid = document.createElement('div');
+  grid.className = 'menu';
+  items.forEach((it, i) => {
+    if (!Array.isArray(it) || !it.length) return;
+    const key = String(it[0] ?? '');
+    const name = String(it[3] ?? '');
+    const desc = String(it[4] ?? '');
+    if (!name && !desc) return;
+    const d = document.createElement('div');
+    d.className = 'mi';
+    d.innerHTML = '<div class="t">' + escapeHtml(name) + '</div>' + (desc ? '<div class="d">' + escapeHtml(desc) + '</div>' : '');
+    d.onclick = () => client?.navigate(i, key);
+    grid.appendChild(d);
+  });
+  menuPanel.appendChild(grid);
+}
+
+function renderPolis(data, d8) {
+  const tabs = d8.tab_list || [];
+  const items = d8.menu_items || [];
+  screenEmptyGone();
+  menuPanel.innerHTML = '';
+  menuPanel.appendChild(btnBar('Полис · ' + String(data[3] || '')));
+  const box = document.createElement('div');
+  box.className = 'panel';
+  const tt = document.createElement('div');
+  tt.className = 'polTabs';
+  tabs.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.className = 'pt' + ((i + 1) === (d8.tab_cur || 1) ? ' act' : '');
+    b.textContent = String(Array.isArray(t) ? (t[0] ?? t) : t);
+    b.onclick = () => client?.action('cAction', { cmd: 'selectPage', tab_no: i + 1 });
+    tt.appendChild(b);
+  });
+  box.appendChild(tt);
+  const lst = document.createElement('div');
+  lst.className = 'menu';
+  items.forEach((it, i) => {
+    if (!Array.isArray(it)) return;
+    const locId = String(it[0]);
+    const name = String(it[3] ?? '');
+    const count = String(it[4] ?? '');
+    const d = document.createElement('div');
+    d.className = 'mi';
+    d.innerHTML = '<div class="t">' + escapeHtml(name) + '</div>' + (count ? '<div class="d">' + escapeHtml(count) + '</div>' : '');
+    d.onclick = () => enterLoc(locId);
+    lst.appendChild(d);
+  });
+  box.appendChild(lst);
+  menuPanel.appendChild(box);
+}
+
+function enterLoc(locId) {
+  log('enter location ' + locId);
+  const n = Number(locId);
+  let [sc, cnt] = app.screen || [1, 0];
+  client?.xorsend(4, 1, 0, [sc, cnt + 1, 'menuSelect', { 'cur_pos': 0, key: String(n) }, {}]);
+  client?.xorsend(3, 4, 0, [n]);   // geo part 1 (bg)
+  client?.xorsend(2, 0, 0, [n]);   // join room
+  showRoomStub(n);
+}
+
+function screenEmptyGone() { $('screenEmpty').style.display = 'none'; }
+
+// ── 2d room ──────────────────────────────────────────
+const canvas = $('roomCW');
+const ctx = canvas.getContext('2d');
+const roomTitle = $('roomTitle');
+const roomCount = $('roomCount');
+const chatLog = $('chatLog');
+
+function showRoomStub(locId) {
+  app.room = { loc_id: locId, places: 25, users: new Map(), msgs: [], bg: null, img: null };
+  roomTitle.textContent = 'Локация ' + locId;
+  chatLog.innerHTML = '';
+  $('gameWrap').style.display = 'flex';
+  $('screenWrap').style.display = 'none';
+  switchTabUI('chat');
+  r();
+}
+
+function openRoom(locId, places, msgList) {
+  showRoomStub(locId);
+  const r = app.room;
+  if (places) r.places = places;
+  if (Array.isArray(msgList)) for (const row of msgList) roomAddMsg(row);
+}
+
+function roomSetBg(data) {
+  const r = app.room;
+  if (!r) return;
+  const chunks = data[0];
+  const n = Number(data[1] ?? 0);
+  if (n && !r.places) r.places = n;
+  if (Array.isArray(chunks)) {
+    for (const c of chunks) {
+      if (c instanceof Uint8Array) { r.bg = c; break; }
+      if (typeof c === 'string') {
+        const m1 = c.match(/^`([0-9a-fA-F]+)`/);
+        if (m1) { r.bg = hexToBytes(m1[1]); break; }
+        const m2 = c.match(/^b'(.*)'$/s);
+        if (m2) {
+          let bin;
+          try { bin = new TextEncoder().encode(String(m2[1]).replace(/\\x([0-9a-f]{2})/g, (m, xx) => String.fromCharCode(parseInt(xx, 16)))); }
+          catch (e) { bin = null; }
+          if (bin) { r.bg = bin; break; }
+        }
+      }
+    }
+  }
+  if (r.bg) {
+    const blob = new Blob([r.bg], { type: 'image/jpeg' });
+    const url = URL.createObjectURL(blob);
+    const im = new Image();
+    im.onload = () => { r.img = im; r(); };
+    im.src = url;
+  }
+  r();
+}
+
+function roomAddMsg(row) {
+  const r = app.room;
+  if (!r) return;
+  const [kind, mid, ts, uid, text] = row;
+  if (text == null) return;
+  r.msgs.push({ kind, mid, ts, uid, text: String(text) });
+  renderChat();
+}
+
+function renderChat() {
+  const r = app.room;
+  if (!r) return;
+  let h = '';
+  for (const m of r.msgs) {
+    const t = bb2html(m.text);
+    if (m.kind === 0 && m.uid) {
+      const me = client && String(m.uid) === String(client.uid);
+      h += '<div class="msg"><span class="who' + (me ? ' me' : '') + '">' + escapeHtml(String(m.uid)) + ':</span> ' + t + '</div>';
+    } else {
+      h += '<div class="msg sys">' + t + '</div>';
+    }
+  }
+  chatLog.innerHTML = h;
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function bb2html(s) {
+  return escapeHtml(String(s))
+    .replace(/\[color=#([0-9a-fA-F]{6})\]/g, '<span style="color:#$1">')
+    .replace(/\[\/color\]/g, '</span>')
+    .replace(/\[b\]/g, '<b>').replace(/\[\/b\]/g, '</b>');
+}
+
+function sendChat() {
+  const inp = $('chatText');
+  const text = inp.value.trim();
+  if (!text || !client || !app.room) return;
+  client.xorsend(2, 28, 0, [text, client.uid]);
+  inp.value = '';
+}
+
+// user list / enter / leave / move
+function areaUpsert(entry) {
+  const r = app.room;
+  if (!r) return;
+  if (!Array.isArray(entry)) return;
+  const uid = Number(entry[0]);
+  const nick = String(entry[3] ?? '');
+  let pos = null;
+  if (Array.isArray(entry[9]) && typeof entry[9][0] === 'number') pos = entry[9][0];
+  if (Array.isArray(entry[10]) && typeof entry[10][0] === 'number') pos = entry[10][0];
+  const sex = Number(entry[5] ?? 0);
+  let img = null;
+  const av = entry[7];
+  if (Array.isArray(av) && av[2] && typeof av[2] === 'object') {
+    img = decodeImg(av[2].image);
+  }
+  r.users.set(uid, { uid, nick, pos, img, sex, online: true });
+  r();
+}
+
+function decodeImg(raw) {
+  if (raw instanceof Uint8Array) return URL.createObjectURL(new Blob([raw], { type: 'image/png' }));
+  if (typeof raw === 'string') {
+    const m1 = raw.match(/^`([0-9a-fA-F]+)`/);
+    if (m1) return URL.createObjectURL(new Blob([hexToBytes(m1[1])], { type: 'image/png' }));
+    const m2 = raw.match(/^b'(.*)'$/s);
+    if (m2) {
+      try {
+        const bin = new TextEncoder().encode(String(m2[1]).replace(/\\x([0-9a-f]{2})/g, (m, xx) => String.fromCharCode(parseInt(xx, 16))));
+        return URL.createObjectURL(new Blob([bin], { type: 'image/png' }));
+      } catch (e) {}
+    }
+  }
+  return null;
+}
+
+function areaRemove(uid) {
+  const r = app.room;
+  if (!r) return;
+  const u = r.users.get(Number(uid));
+  if (u) u.online = false;
+  r();
+}
+
+function roomMove(uid, xy) {
+  const r = app.room;
+  if (!r) return;
+  const u = r.users.get(Number(uid));
+  if (!u) return;
+  if (Array.isArray(xy) && typeof xy[0] === 'number') u.pos = xy[0];
+  if (Array.isArray(xy) && typeof xy[1] === 'number') u.posY = xy[1];
+  r();
+}
+
+function leaveRoom() {
+  client?.xorsend(2, 7, 0, []);
+  app.room = null;
+  $('gameWrap').style.display = 'none';
+  $('screenWrap').style.display = '';
+  if (client) client.xorsend(4, 0, 0, [0]);
+}
+
+function renderToolbar() {
+  const tb = app.toolbars;
+  $('tbHome').hidden = !(tb && tb._home != null);
+  $('tbMoney').hidden = !(tb && tb._money != null);
+  $('tbMsg').hidden = !(tb && tb.__new_msg != null);
+}
+function tbTap(key) {
+  const tb = app.toolbars && app.toolbars[key];
+  if (!tb || !tb[1]) return;
+  const inner = tb[1];
+  const cmd = Array.isArray(inner) ? inner[1] : null;
+  if (cmd && Array.isArray(cmd) && typeof cmd[0] === 'string') {
+    client?.action(cmd[0], cmd[1] || {});
+  }
+}
+
+// canvas
+function r() {
+  const room = app.room;
+  if (!room) return;
+  const W = canvas.parentElement.clientWidth, H = canvas.parentElement.clientHeight;
+  if (!W || !H) return;
+  if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0a0e14';
+  ctx.fillRect(0, 0, W, H);
+
+  if (room.img) {
+    const img = room.img;
+    const s = Math.max(W / img.width, H / (img.height * 1.2));
+    const iw = img.width * s, ih = img.height * s;
+    ctx.drawImage(img, 0, 0, iw, ih);
+  }
+
+  const places = room.places || 25;
+  const scale = room.img ? W / room.img.width : W / 800;
+  const scX = (p) => (p + 0.5) * (W / places);
+
+  const online = [...room.users.values()].filter(u => u.online);
+  const busy = new Set(online.filter(u => u.pos != null).map(u => u.pos));
+  for (let p = 0; p < places; p++) {
+    const x = scX(p), y = H * 0.80;
+    ctx.beginPath();
+    ctx.arc(x, y, 9, 0, Math.PI * 2);
+    ctx.fillStyle = busy.has(p) ? '#4c7edb' : '#26374d';
+    ctx.fill();
+    ctx.strokeStyle = '#33455c';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    if (!busy.has(p) && places <= 40) {
+      ctx.fillStyle = '#6d8298';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(p + 1), x + 13, y + 4);
+    }
+  }
+  ctx.textAlign = 'start';
+
+  const avatarW = Math.min(46, W / 14);
+  const avatarH = avatarW * 0.75;
+
+  for (const u of online) {
+    const place = u.pos ?? 0;
+    const x = scX(place), y = H * 0.80;
+    const bx = x, by = y - avatarH - 16;
+    drawRound(ctx, bx - avatarW / 2 - 3, by - 3, avatarW + 6, avatarH + 22, 8);
+    ctx.fillStyle = 'rgba(10,14,20,.78)';
+    ctx.fill();
+    ctx.strokeStyle = '#4c7edb';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    if (u.img) {
+      const im = new Image();
+      im.onload = () => { try { ctx.drawImage(im, bx - avatarW / 2, by, avatarW, avatarH); } catch (e) {} };
+      im.src = u.img;
+    } else {
+      ctx.fillStyle = u.sex === 1 ? '#c96c9e' : '#8aa0c4';
+      ctx.beginPath();
+      ctx.arc(bx, by + avatarH / 2 - 4, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(u.uid).slice(-2), bx, by + avatarH / 2);
+    }
+    ctx.fillStyle = '#dfe7f0';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(shortNick(u.nick) || String(u.uid), bx, by + avatarH + 8);
+    ctx.textAlign = 'start';
+  }
+  roomCount.textContent = online.length + ' в локации';
+}
+
+function drawRound(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+function shortNick(n) { const s = String(n ?? ''); return s.length > 9 ? s.slice(0, 8) + '…' : s || ''; }
+
+// dialogs
+function showDlg(data, d8) {
+  $('dlgMsg').innerHTML = bb2html(String(d8.msg ?? ''));
+  const ans = $('dlgAns');
+  ans.innerHTML = '';
+  const entries = Object.entries(d8.ans_list || {});
+  if (!entries.length) {
+    const b = document.createElement('button');
+    b.className = 'btn';
+    b.textContent = 'ОК';
+    b.onclick = () => { $('dialog').style.display = 'none'; };
+    ans.appendChild(b);
+  }
+  for (const [k, v] of entries) {
+    const b = document.createElement('button');
+    b.className = 'btn green';
+    b.textContent = String(v);
+    b.onclick = () => {
+      $('dialog').style.display = 'none';
+      client?.action('main', { key: k });
+    };
+    ans.appendChild(b);
+  }
+  $('dialog').style.display = 'flex';
+}
+
+// nav
+function switchTabUI(name) {
+  document.querySelectorAll('nav .tab').forEach((t) => t.classList.toggle('act', t.dataset.nav === name));
+}
+document.querySelectorAll('nav .tab').forEach((t) => {
+  t.onclick = () => {
+    const n = t.dataset.nav;
+    switchTabUI(n);
+    if (n === 'main') { $('screenWrap').style.display = ''; $('gameWrap').style.display = 'none'; }
+    if (n === 'polis') { if (client) client.xorsend(4, 0, 0, [0]); setTimeout(openPolis, 350); }
+    if (n === 'chat') { if (app.room) { $('screenWrap').style.display = 'none'; $('gameWrap').style.display = 'flex'; } }
+  };
+});
+
+function openPolis() {
+  if (!client) return;
+  $('splash').querySelector('.s').textContent = 'город…';
+  $('splash').style.display = 'flex';
+  let [sc, cnt] = app.screen || [1, 0];
+  client.xorsend(4, 1, 0, [sc, cnt + 1, 'main', { key: 'polis_chat/main' }, {}]);
+  setTimeout(() => $('splash').style.display = 'none', 1400);
+}
+
+function openMainMenu() {
+  if (!client || !client.authOk) { log('нет сессии', 'err'); return; }
+  $('splash').style.display = 'flex';
+  $('splash').querySelector('.s').textContent = 'главное меню…';
+  client.xorsend(5, 6, 0, []);
+  setTimeout(() => { client.xorsend(4, 0, 0, [0]); setTimeout(() => $('splash').style.display = 'none', 1200); }, 250);
+}
+
+function doConnect() {
+  const bridge = $('bridge').value.trim();
+  if (!/^wss?:\/\//.test(bridge)) { log('укажи wss:// адрес Worker', 'err'); return; }
+  const uid = parseInt($('uid').value);
+  const pw = $('pw').value;
+  const blob = $('blob').value;
+  const aid = $('aid').value || ('web' + Math.floor(Math.random() * 1e6));
+  const intZero = $('intzero').checked;
+  $('splash').style.display = 'flex';
+  $('splash').querySelector('.s').textContent = 'подключение к ' + bridge;
+  $('btnConnect').disabled = true; $('btnDisconnect').disabled = false;
+  const c = new WebBubutaClient(bridge);
+  client = c;
+  c.onContent = renderScreen;
+  c.connect(uid, pw, blob, aid, intZero)
+    .then((res) => {
+      $('btnConnect').disabled = false;
+      $('splash').style.display = 'none';
+      if (res.status === 'login_ok') {
+        openMainMenu();
+      } else if (res.status === 'new_device') {
+        log('новое устройство: переключи blob на reg', 'err');
+      } else if (res.status !== 'closed') {
+        log('статус: ' + res.status, 'err');
+      }
+    })
+    .catch((e) => { $('btnConnect').disabled = false; $('splash').style.display = 'none'; log('connect: ' + e, 'err'); });
+}
+
+function doDisconnect() {
+  client?.close();
+  client = null;
+  $('conn').className = '';
+  $('btnConnect').disabled = false; $('btnDisconnect').disabled = true;
+}
+function toggleSettings() { $('settingsPanel').classList.toggle('hidden'); }
+function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+window.addEventListener('resize', () => { if (app.room) r(); });
+setInterval(() => { if (app.room) r(); }, 4000);
+
+window.openMainMenu = openMainMenu;
+window.toggleSettings = toggleSettings;
+window.doConnect = doConnect;
+window.doDisconnect = doDisconnect;
+window.sendChat = sendChat;
+window.tbTap = tbTap;
+window.leaveRoom = leaveRoom;
+</script>
+</body>
+</html>
